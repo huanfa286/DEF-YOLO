@@ -1,7 +1,5 @@
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from ultralytics.nn.modules.conv import Conv
+from torch import nn
+
 
 class MSCAAttention(nn.Module):
     # SegNext NeurIPS 2022
