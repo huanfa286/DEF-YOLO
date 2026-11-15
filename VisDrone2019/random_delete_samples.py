@@ -19,12 +19,13 @@ RANDOM_SEED = 42
 
 # =====================================================================
 
+
 def load_classes(classes_path):
-    """读取classes.txt，返回{类别名:索引, 索引:类别名}的双向映射"""
+    """读取classes.txt，返回{类别名:索引, 索引:类别名}的双向映射."""
     class2idx = {}
     idx2class = {}
     try:
-        with open(classes_path, 'r', encoding='utf-8') as f:
+        with open(classes_path, encoding="utf-8") as f:
             lines = [line.strip() for line in f if line.strip()]
             for idx, cls_name in enumerate(lines):
                 class2idx[cls_name] = idx
@@ -36,18 +37,16 @@ def load_classes(classes_path):
 
 
 def get_valid_samples(image_dir, label_dir):
-    """
-    获取图片-标签对应的有效样本字典
-    返回：{样本基础名: (图片路径, 标签路径)}
+    """获取图片-标签对应的有效样本字典 返回：{样本基础名: (图片路径, 标签路径)}.
     """
     valid_samples = {}
     # 支持的图片扩展名
-    img_exts = ('.jpg', '.jpeg', '.png', '.bmp', '.JPG', '.JPEG', '.PNG', '.BMP')
+    img_exts = (".jpg", ".jpeg", ".png", ".bmp", ".JPG", ".JPEG", ".PNG", ".BMP")
 
     # 先收集所有标签文件
     label_files = {}
     for fname in os.listdir(label_dir):
-        if fname.endswith('.txt'):
+        if fname.endswith(".txt"):
             base_name = os.path.splitext(fname)[0]
             label_files[base_name] = os.path.join(label_dir, fname)
 
@@ -64,10 +63,10 @@ def get_valid_samples(image_dir, label_dir):
 
 
 def has_protect_class(label_path, protect_idx):
-    """检查标签文件是否包含保护类别（ship）"""
+    """检查标签文件是否包含保护类别（ship）."""
     try:
-        with open(label_path, 'r', encoding='utf-8') as f:
-            lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        with open(label_path, encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
         for line in lines:
             parts = line.split()
             if len(parts) < 1:
@@ -90,7 +89,7 @@ def main():
     input("按下 Enter 键继续（或 Ctrl+C 终止）...\n")
 
     # 1. 加载类别映射并验证保护类别
-    class2idx, idx2class = load_classes(CLASSES_PATH)
+    class2idx, _idx2class = load_classes(CLASSES_PATH)
     if PROTECT_CLASS not in class2idx:
         print(f"❌ 错误：classes.txt中未找到保护类别「{PROTECT_CLASS}」")
         print(f"当前classes.txt包含的类别：{list(class2idx.keys())}")
@@ -103,7 +102,7 @@ def main():
     print(f"✅ 找到有效样本（图片+标签对应）数量：{len(valid_samples)}")
 
     if len(valid_samples) == 0:
-        print(f"❌ 错误：未找到任何有效样本（图片+标签对应）")
+        print("❌ 错误：未找到任何有效样本（图片+标签对应）")
         sys.exit(1)
 
     # 3. 筛选出可删除的样本（无ship标签）
@@ -138,7 +137,7 @@ def main():
 
     # 6. 输出统计信息并确认删除
     print("\n" + "=" * 60)
-    print(f"📊 最终抽样结果：")
+    print("📊 最终抽样结果：")
     print(f"   计划删除样本数：{PLANNED_DELETE_COUNT}")
     print(f"   实际删除样本数：{actual_delete_count}")
     print(f"   可删除样本总数：{len(deletable_samples)}")
@@ -156,7 +155,7 @@ def main():
 
     # 安全确认
     confirm = input(f"\n⚠️  确认删除以上选中的 {actual_delete_count} 个样本？(输入 y 确认，其他键取消)：")
-    if confirm.lower() != 'y':
+    if confirm.lower() != "y":
         print("\n🚫 用户取消了删除操作")
         sys.exit(0)
 
@@ -183,7 +182,7 @@ def main():
 
     # 8. 输出最终结果
     print("\n" + "=" * 60)
-    print(f"🎉 删除操作完成！")
+    print("🎉 删除操作完成！")
     print(f"   计划删除样本数：{PLANNED_DELETE_COUNT}")
     print(f"   实际删除样本数：{actual_delete_count}")
     print(f"   成功删除图片数：{deleted_img_count}")
