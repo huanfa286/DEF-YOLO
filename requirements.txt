@@ -16,7 +16,7 @@ matplotlib==3.9.4
 scipy==1.13.1
 pandas==2.3.3
 seaborn==0.13.2
-PyYAML==6.0.2
+PyYAML==6.0.3
 
 # Ultralytics training, validation, inference and plotting
 torch==2.2.2
