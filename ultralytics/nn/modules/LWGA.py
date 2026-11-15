@@ -1,12 +1,13 @@
-import torch
-import torch.nn as nn
-from timm.layers import DropPath, trunc_normal_
-from typing import List
-from torch import Tensor
-import os
+from __future__ import annotations
+
 import copy
+import os
+
 import antialiased_cnns
+import torch
 import torch.nn.functional as F
+from timm.layers import DropPath, trunc_normal_
+from torch import Tensor, nn
 
 
 class DRFD(nn.Module):
@@ -14,13 +15,13 @@ class DRFD(nn.Module):
         super().__init__()
         self.dim = dim
         self.outdim = dim * 2
-        self.conv = nn.Conv2d(dim, dim*2, kernel_size=3, stride=1, padding=1, groups=dim)
-        self.conv_c = nn.Conv2d(dim*2, dim*2, kernel_size=3, stride=2, padding=1, groups=dim*2)
+        self.conv = nn.Conv2d(dim, dim * 2, kernel_size=3, stride=1, padding=1, groups=dim)
+        self.conv_c = nn.Conv2d(dim * 2, dim * 2, kernel_size=3, stride=2, padding=1, groups=dim * 2)
         self.act_c = act_layer()
-        self.norm_c = norm_layer(dim*2)
+        self.norm_c = norm_layer(dim * 2)
         self.max_m = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.norm_m = norm_layer(dim*2)
-        self.fusion = nn.Conv2d(dim*4, self.outdim, kernel_size=1, stride=1)
+        self.norm_m = norm_layer(dim * 2)
+        self.fusion = nn.Conv2d(dim * 4, self.outdim, kernel_size=1, stride=1)
 
     def forward(self, x):
         x = self.conv(x)
@@ -35,10 +36,10 @@ class PA(nn.Module):
     def __init__(self, dim, norm_layer, act_layer):
         super().__init__()
         self.p_conv = nn.Sequential(
-            nn.Conv2d(dim, dim*4, 1, bias=False),
-            norm_layer(dim*4),
+            nn.Conv2d(dim, dim * 4, 1, bias=False),
+            norm_layer(dim * 4),
             act_layer(),
-            nn.Conv2d(dim*4, dim, 1, bias=False)
+            nn.Conv2d(dim * 4, dim, 1, bias=False),
         )
         self.gate_fn = nn.Sigmoid()
 
@@ -51,11 +52,7 @@ class PA(nn.Module):
 class LA(nn.Module):
     def __init__(self, dim, norm_layer, act_layer):
         super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(dim, dim, 3, 1, 1, bias=False),
-            norm_layer(dim),
-            act_layer()
-        )
+        self.conv = nn.Sequential(nn.Conv2d(dim, dim, 3, 1, 1, bias=False), norm_layer(dim), act_layer())
 
     def forward(self, x):
         x = self.conv(x)
@@ -85,32 +82,32 @@ class MRA(nn.Module):
         x_w2 = self.inv_v_transform(self.V_att2(self.v_transform(x_tem)))
 
         att = self.norm(x_h1 + x_w1 + x_h2 + x_w2)
-        out = x[:, :self.channel, :, :] * F.interpolate(self.gate_fn(att),
-                                                        size=(x.shape[-2], x.shape[-1]),
-                                                        mode='nearest')
+        out = x[:, : self.channel, :, :] * F.interpolate(
+            self.gate_fn(att), size=(x.shape[-2], x.shape[-1]), mode="nearest"
+        )
         return out
 
     def h_transform(self, x):
         shape = x.size()
         x = torch.nn.functional.pad(x, (0, shape[-1]))
-        x = x.reshape(shape[0], shape[1], -1)[..., :-shape[-1]]
-        x = x.reshape(shape[0], shape[1], shape[2], 2*shape[3]-1)
+        x = x.reshape(shape[0], shape[1], -1)[..., : -shape[-1]]
+        x = x.reshape(shape[0], shape[1], shape[2], 2 * shape[3] - 1)
         return x
 
     def inv_h_transform(self, x):
         shape = x.size()
         x = x.reshape(shape[0], shape[1], -1).contiguous()
         x = torch.nn.functional.pad(x, (0, shape[-2]))
-        x = x.reshape(shape[0], shape[1], shape[-2], 2*shape[-2])
-        x = x[..., 0: shape[-2]]
+        x = x.reshape(shape[0], shape[1], shape[-2], 2 * shape[-2])
+        x = x[..., 0 : shape[-2]]
         return x
 
     def v_transform(self, x):
         x = x.permute(0, 1, 3, 2)
         shape = x.size()
         x = torch.nn.functional.pad(x, (0, shape[-1]))
-        x = x.reshape(shape[0], shape[1], -1)[..., :-shape[-1]]
-        x = x.reshape(shape[0], shape[1], shape[2], 2*shape[3]-1)
+        x = x.reshape(shape[0], shape[1], -1)[..., : -shape[-1]]
+        x = x.reshape(shape[0], shape[1], shape[2], 2 * shape[3] - 1)
         return x.permute(0, 1, 3, 2)
 
     def inv_v_transform(self, x):
@@ -118,8 +115,8 @@ class MRA(nn.Module):
         shape = x.size()
         x = x.reshape(shape[0], shape[1], -1)
         x = torch.nn.functional.pad(x, (0, shape[-2]))
-        x = x.reshape(shape[0], shape[1], shape[-2], 2*shape[-2])
-        x = x[..., 0: shape[-2]]
+        x = x.reshape(shape[0], shape[1], shape[-2], 2 * shape[-2])
+        x = x[..., 0 : shape[-2]]
         return x.permute(0, 1, 3, 2)
 
 
@@ -177,12 +174,13 @@ class D_GA(nn.Module):
 
 
 class GA(nn.Module):
-    def __init__(self, dim, head_dim=4, num_heads=None, qkv_bias=False,
-                 attn_drop=0., proj_drop=0., proj_bias=False, **kwargs):
+    def __init__(
+        self, dim, head_dim=4, num_heads=None, qkv_bias=False, attn_drop=0.0, proj_drop=0.0, proj_bias=False, **kwargs
+    ):
         super().__init__()
 
         self.head_dim = head_dim
-        self.scale = head_dim ** -0.5
+        self.scale = head_dim**-0.5
 
         self.num_heads = num_heads if num_heads else dim // head_dim
         if self.num_heads == 0:
@@ -195,7 +193,7 @@ class GA(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
-        B, C, H, W = x.shape
+        B, _C, H, W = x.shape
         x = x.permute(0, 2, 3, 1)
         N = H * W
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
@@ -214,26 +212,28 @@ class GA(nn.Module):
 
 class LWGA_Block(nn.Module):
     # 核心修改：给act_layer和norm_layer加默认值，避免参数缺失
-    def __init__(self,
-                 dim,
-                 stage,
-                 att_kernel,
-                 mlp_ratio,
-                 drop_path,
-                 act_layer=nn.GELU,  # 新增默认值
-                 norm_layer=nn.BatchNorm2d):  # 新增默认值
+    def __init__(
+        self,
+        dim,
+        stage,
+        att_kernel,
+        mlp_ratio,
+        drop_path,
+        act_layer=nn.GELU,  # 新增默认值
+        norm_layer=nn.BatchNorm2d,
+    ):  # 新增默认值
         super().__init__()
         self.stage = stage
         self.dim_split = dim // 4
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
         mlp_hidden_dim = int(dim * mlp_ratio)
 
-        mlp_layer: List[nn.Module] = [
+        mlp_layer: list[nn.Module] = [
             nn.Conv2d(dim, mlp_hidden_dim, 1, bias=False),
             norm_layer(mlp_hidden_dim),
             act_layer(),
-            nn.Conv2d(mlp_hidden_dim, dim, 1, bias=False)
+            nn.Conv2d(mlp_hidden_dim, dim, 1, bias=False),
         ]
 
         self.mlp = nn.Sequential(*mlp_layer)
@@ -272,16 +272,7 @@ class LWGA_Block(nn.Module):
 
 
 class BasicStage(nn.Module):
-    def __init__(self,
-                 dim,
-                 stage,
-                 depth,
-                 att_kernel,
-                 mlp_ratio,
-                 drop_path,
-                 norm_layer,
-                 act_layer
-                 ):
+    def __init__(self, dim, stage, depth, att_kernel, mlp_ratio, drop_path, norm_layer, act_layer):
         super().__init__()
 
         blocks_list = [
@@ -292,8 +283,8 @@ class BasicStage(nn.Module):
                 mlp_ratio=mlp_ratio,
                 drop_path=drop_path[i],
                 norm_layer=norm_layer,
-                act_layer=act_layer
-                 )
+                act_layer=act_layer,
+            )
             for i in range(depth)
         ]
 
@@ -319,22 +310,24 @@ class Stem(nn.Module):
 
 
 class LWGANet(nn.Module):
-    def __init__(self,
-                 in_chans=3,
-                 num_classes=1000,
-                 stem_dim=64,
-                 depths=(1, 2, 4, 2),
-                 att_kernel=(11, 11, 11, 11),
-                 norm_layer=nn.BatchNorm2d,
-                 act_layer=nn.GELU,
-                 mlp_ratio=2.,
-                 stem_norm=True,
-                 feature_dim=1280,
-                 drop_path_rate=0.1,
-                 fork_feat=False,
-                 init_cfg=None,
-                 pretrained=None,
-                 **kwargs):
+    def __init__(
+        self,
+        in_chans=3,
+        num_classes=1000,
+        stem_dim=64,
+        depths=(1, 2, 4, 2),
+        att_kernel=(11, 11, 11, 11),
+        norm_layer=nn.BatchNorm2d,
+        act_layer=nn.GELU,
+        mlp_ratio=2.0,
+        stem_norm=True,
+        feature_dim=1280,
+        drop_path_rate=0.1,
+        fork_feat=False,
+        init_cfg=None,
+        pretrained=None,
+        **kwargs,
+    ):
         super().__init__()
 
         if not fork_feat:
@@ -345,31 +338,26 @@ class LWGANet(nn.Module):
         if stem_dim == 96:
             act_layer = nn.ReLU
 
-        self.Stem = Stem(
-            in_chans=in_chans, stem_dim=stem_dim,
-            norm_layer=norm_layer if stem_norm else None
-        )
+        self.Stem = Stem(in_chans=in_chans, stem_dim=stem_dim, norm_layer=norm_layer if stem_norm else None)
 
-        dpr = [x.item()
-               for x in torch.linspace(0, drop_path_rate, sum(depths))]
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
 
         stages_list = []
         for i_stage in range(self.num_stages):
-            stage = BasicStage(dim=int(stem_dim * 2 ** i_stage),
-                               stage=i_stage,
-                               depth=depths[i_stage],
-                               att_kernel=att_kernel[i_stage],
-                               mlp_ratio=mlp_ratio,
-                               drop_path=dpr[sum(depths[:i_stage]):sum(depths[:i_stage + 1])],
-                               norm_layer=norm_layer,
-                               act_layer=act_layer
-                               )
+            stage = BasicStage(
+                dim=int(stem_dim * 2**i_stage),
+                stage=i_stage,
+                depth=depths[i_stage],
+                att_kernel=att_kernel[i_stage],
+                mlp_ratio=mlp_ratio,
+                drop_path=dpr[sum(depths[:i_stage]) : sum(depths[: i_stage + 1])],
+                norm_layer=norm_layer,
+                act_layer=act_layer,
+            )
             stages_list.append(stage)
 
             if i_stage < self.num_stages - 1:
-                stages_list.append(
-                    DRFD(dim=int(stem_dim * 2 ** i_stage), norm_layer=norm_layer, act_layer=act_layer)
-                )
+                stages_list.append(DRFD(dim=int(stem_dim * 2**i_stage), norm_layer=norm_layer, act_layer=act_layer))
 
         self.stages = nn.Sequential(*stages_list)
 
@@ -379,21 +367,18 @@ class LWGANet(nn.Module):
             self.forward = self.forward_det
             self.out_indices = [0, 2, 4, 6]
             for i_emb, i_layer in enumerate(self.out_indices):
-                if i_emb == 0 and os.environ.get('FORK_LAST3', None):
+                if i_emb == 0 and os.environ.get("FORK_LAST3", None):
                     raise NotImplementedError
                 else:
-                    layer = norm_layer(int(stem_dim * 2 ** i_emb))
-                layer_name = f'norm{i_layer}'
+                    layer = norm_layer(int(stem_dim * 2**i_emb))
+                layer_name = f"norm{i_layer}"
                 self.add_module(layer_name, layer)
         else:
             self.forward = self.forward_cls
             self.avgpool_pre_head = nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),
-                nn.Conv2d(self.num_features, feature_dim, 1, bias=False),
-                act_layer()
+                nn.AdaptiveAvgPool2d(1), nn.Conv2d(self.num_features, feature_dim, 1, bias=False), act_layer()
             )
-            self.head = nn.Linear(feature_dim, num_classes) \
-                if num_classes > 0 else nn.Identity()
+            self.head = nn.Linear(feature_dim, num_classes) if num_classes > 0 else nn.Identity()
 
         self.apply(self.cls_init_weights)
         self.init_cfg = copy.deepcopy(init_cfg)
@@ -402,11 +387,11 @@ class LWGANet(nn.Module):
 
     def cls_init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
+            trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, (nn.Conv1d, nn.Conv2d)):
-            trunc_normal_(m.weight, std=.02)
+            trunc_normal_(m.weight, std=0.02)
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, (nn.LayerNorm, nn.GroupNorm, nn.BatchNorm2d)):
@@ -415,24 +400,24 @@ class LWGANet(nn.Module):
 
     def init_weights(self, pretrained=None):
         if self.init_cfg is None and pretrained is None:
-            print(f'No pre-trained weights for {self.__class__.__name__}, training start from scratch')
+            print(f"No pre-trained weights for {self.__class__.__name__}, training start from scratch")
             return
         else:
-            ckpt_path = self.init_cfg['checkpoint'] if self.init_cfg is not None else pretrained
+            ckpt_path = self.init_cfg["checkpoint"] if self.init_cfg is not None else pretrained
 
-        ckpt = torch.load(ckpt_path, map_location='cpu')
-        if 'state_dict' in ckpt:
-            _state_dict = ckpt['state_dict']
-        elif 'model' in ckpt:
-            _state_dict = ckpt['model']
+        ckpt = torch.load(ckpt_path, map_location="cpu")
+        if "state_dict" in ckpt:
+            _state_dict = ckpt["state_dict"]
+        elif "model" in ckpt:
+            _state_dict = ckpt["model"]
         else:
             _state_dict = ckpt
 
         state_dict = _state_dict
         missing_keys, unexpected_keys = self.load_state_dict(state_dict, strict=False)
 
-        print('missing_keys: ', missing_keys)
-        print('unexpected_keys: ', unexpected_keys)
+        print("missing_keys: ", missing_keys)
+        print("unexpected_keys: ", unexpected_keys)
 
     def forward_cls(self, x):
         x = self.Stem(x)
@@ -448,88 +433,100 @@ class LWGANet(nn.Module):
         for idx, stage in enumerate(self.stages):
             x = stage(x)
             if self.fork_feat and idx in self.out_indices:
-                norm_layer = getattr(self, f'norm{idx}')
+                norm_layer = getattr(self, f"norm{idx}")
                 x_out = norm_layer(x)
                 outs.append(x_out)
         return outs
 
 
 def LWGANet_L0_1242_e32_k11_GELU(num_classes=2, stem_dim=32, pretrained=None, **kwargs):
-    model = LWGANet(in_chans=3,
-                    num_classes=num_classes,
-                    stem_dim=stem_dim,
-                    depths=(1, 2, 4, 2),
-                    att_kernel=(11, 11, 11, 11),
-                    norm_layer=nn.BatchNorm2d,
-                    act_layer=nn.GELU,
-                    drop_path_rate=0.0,
-                    fork_feat=True,
-                    **kwargs)
+    model = LWGANet(
+        in_chans=3,
+        num_classes=num_classes,
+        stem_dim=stem_dim,
+        depths=(1, 2, 4, 2),
+        att_kernel=(11, 11, 11, 11),
+        norm_layer=nn.BatchNorm2d,
+        act_layer=nn.GELU,
+        drop_path_rate=0.0,
+        fork_feat=True,
+        **kwargs,
+    )
     if pretrained is True:
-        checkpoint = torch.load('./backbone_weights/lwganet_l0_e298.pth',
-                                map_location=torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu'))
-        _state_dict = checkpoint['model']
+        checkpoint = torch.load(
+            "./backbone_weights/lwganet_l0_e298.pth",
+            map_location=torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu"),
+        )
+        _state_dict = checkpoint["model"]
         state_dict = _state_dict
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
 
-        print('The weights are successfully loaded\n')
-        print('missing_keys: ', missing_keys)
-        print('unexpected_keys: ', unexpected_keys)
+        print("The weights are successfully loaded\n")
+        print("missing_keys: ", missing_keys)
+        print("unexpected_keys: ", unexpected_keys)
 
     return model
 
 
 def LWGANet_L1_1242_e64_k11_GELU(num_classes=2, stem_dim=64, pretrained=None, **kwargs):
-    model = LWGANet(in_chans=3,
-                    num_classes=num_classes,
-                    stem_dim=stem_dim,
-                    depths=(1, 2, 4, 2),
-                    att_kernel=(11, 11, 11, 11),
-                    norm_layer=nn.BatchNorm2d,
-                    act_layer=nn.GELU,
-                    drop_path_rate=0.0,
-                    fork_feat=True,
-                    **kwargs)
+    model = LWGANet(
+        in_chans=3,
+        num_classes=num_classes,
+        stem_dim=stem_dim,
+        depths=(1, 2, 4, 2),
+        att_kernel=(11, 11, 11, 11),
+        norm_layer=nn.BatchNorm2d,
+        act_layer=nn.GELU,
+        drop_path_rate=0.0,
+        fork_feat=True,
+        **kwargs,
+    )
     if pretrained is True:
-        checkpoint = torch.load('./backbone_weights/lwganet_l1.pth',
-                                map_location=torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu'))
-        _state_dict = checkpoint['model']
+        checkpoint = torch.load(
+            "./backbone_weights/lwganet_l1.pth",
+            map_location=torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu"),
+        )
+        _state_dict = checkpoint["model"]
         state_dict = _state_dict
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
 
-        print('The weights are successfully loaded\n')
-        print('missing_keys: ', missing_keys)
-        print('unexpected_keys: ', unexpected_keys)
+        print("The weights are successfully loaded\n")
+        print("missing_keys: ", missing_keys)
+        print("unexpected_keys: ", unexpected_keys)
 
     return model
 
 
 def LWGANet_L2_1242_e96_k11_RELU(num_classes=2, stem_dim=96, pretrained=None, **kwargs):
-    model = LWGANet(in_chans=3,
-                    num_classes=num_classes,
-                    stem_dim=stem_dim,
-                    depths=(1, 4, 4, 2),
-                    att_kernel=(11, 11, 11, 11),
-                    norm_layer=nn.BatchNorm2d,
-                    act_layer=nn.ReLU,
-                    drop_path_rate=0.1,
-                    fork_feat=True,
-                    **kwargs)
+    model = LWGANet(
+        in_chans=3,
+        num_classes=num_classes,
+        stem_dim=stem_dim,
+        depths=(1, 4, 4, 2),
+        att_kernel=(11, 11, 11, 11),
+        norm_layer=nn.BatchNorm2d,
+        act_layer=nn.ReLU,
+        drop_path_rate=0.1,
+        fork_feat=True,
+        **kwargs,
+    )
     if pretrained is True:
-        checkpoint = torch.load('./backbone_weights/lwganet_l2.pth',
-                                map_location=torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu'))
-        _state_dict = checkpoint['model']
+        checkpoint = torch.load(
+            "./backbone_weights/lwganet_l2.pth",
+            map_location=torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu"),
+        )
+        _state_dict = checkpoint["model"]
         state_dict = _state_dict
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
 
-        print('The weights are successfully loaded\n')
-        print('missing_keys: ', missing_keys)
-        print('unexpected_keys: ', unexpected_keys)
+        print("The weights are successfully loaded\n")
+        print("missing_keys: ", missing_keys)
+        print("unexpected_keys: ", unexpected_keys)
 
     return model
 
 
-def lwga_block(c1, c2, k=3, s=1, p=None, w=None, stage=1, att_kernel=3, mlp_ratio=2., drop_path=0.1):
+def lwga_block(c1, c2, k=3, s=1, p=None, w=None, stage=1, att_kernel=3, mlp_ratio=2.0, drop_path=0.1):
     dim = max(round(c1 * w), 1) if w is not None else c1
     return LWGA_Block(
         dim=dim,
@@ -538,7 +535,7 @@ def lwga_block(c1, c2, k=3, s=1, p=None, w=None, stage=1, att_kernel=3, mlp_rati
         mlp_ratio=mlp_ratio,
         drop_path=drop_path,
         act_layer=nn.GELU,
-        norm_layer=nn.BatchNorm2d
+        norm_layer=nn.BatchNorm2d,
     )
 
 
@@ -553,17 +550,13 @@ class DEConv_LWGA_Series(nn.Module):
                 def __init__(self, dim):
                     super().__init__()
                     self.conv = nn.Conv2d(dim, dim, 3, 1, 1)
+
                 def forward(self, x):
                     return self.conv(x)
+
         self.deconv = DEConv(dim)
         self.lwga = LWGA_Block(
-            dim=dim,
-            stage=1,
-            att_kernel=3,
-            mlp_ratio=2.,
-            drop_path=0.1,
-            act_layer=nn.GELU,
-            norm_layer=nn.BatchNorm2d
+            dim=dim, stage=1, att_kernel=3, mlp_ratio=2.0, drop_path=0.1, act_layer=nn.GELU, norm_layer=nn.BatchNorm2d
         )
         self.shortcut = nn.Identity()
         self.norm = nn.BatchNorm2d(dim)
@@ -585,20 +578,14 @@ def deconv_lwga_series(c1, c2, k=3, s=1, p=None, w=None):
 if __name__ == "__main__":
     # 测试1：初始化LWGA_Block（参数完整，无报错）
     lwga = LWGA_Block(
-        dim=64,
-        stage=1,
-        att_kernel=11,
-        mlp_ratio=2.,
-        drop_path=0.1,
-        act_layer=nn.GELU,
-        norm_layer=nn.BatchNorm2d
+        dim=64, stage=1, att_kernel=11, mlp_ratio=2.0, drop_path=0.1, act_layer=nn.GELU, norm_layer=nn.BatchNorm2d
     )
-    
+
     # 测试2：前向传播（模拟YOLO11n的输入尺寸）
     x = torch.randn(1, 64, 32, 32)  # [B, C, H, W]
     out = lwga(x)
     print(f"LWGA_Block前向传播成功！输入尺寸：{x.shape}，输出尺寸：{out.shape}")
-    
+
     # 测试3：初始化串联模块
     deconv_lwga = DEConv_LWGA_Series(dim=64)
     out_series = deconv_lwga(x)
