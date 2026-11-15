@@ -1,14 +1,13 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class AttentionWeight(nn.Module):
-    """注意力权重计算模块，用于生成空间维度上的注意力权重
-    功能：通过对输入特征的最大值和平均值进行聚合，经卷积和激活后生成权重，实现空间注意力机制
+    """注意力权重计算模块，用于生成空间维度上的注意力权重 功能：通过对输入特征的最大值和平均值进行聚合，经卷积和激活后生成权重，实现空间注意力机制.
     """
 
     def __init__(self, channel, kernel_size=7):
-        super(AttentionWeight, self).__init__()
+        super().__init__()
         padding = (kernel_size - 1) // 2  # 保持卷积前后特征尺寸不变
         self.conv1 = nn.Conv2d(2, 1, kernel_size=1)  # 融合最大池化和平均池化特征
         # 深度可分离卷积，减少参数同时捕捉局部空间信息
@@ -17,7 +16,7 @@ class AttentionWeight(nn.Module):
         self.sigmoid = nn.Sigmoid()  # 输出权重在0-1之间
 
     def forward(self, x):
-        b, w, c, h = x.size()  # 获取输入特征尺寸：(batch, 宽度, 通道, 高度)
+        b, _w, c, h = x.size()  # 获取输入特征尺寸：(batch, 宽度, 通道, 高度)
         # 沿宽度维度聚合特征（最大池化和平均池化），并拼接
         x_weight = torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)
         x_weight = self.conv1(x_weight).view(b, c, h)  # 降维并调整形状
@@ -28,16 +27,16 @@ class AttentionWeight(nn.Module):
 
 
 class IIA(nn.Module):
-    """交互式注意力模块（Interactive Attention Module）
-    功能：通过在高度和宽度两个空间维度分别施加注意力，增强特征的空间相关性
+    """交互式注意力模块（Interactive Attention Module） 功能：通过在高度和宽度两个空间维度分别施加注意力，增强特征的空间相关性.
     """
+
     # ======================================
     # ✅ 【唯一修改点1】：兼容C3k2的传参格式，核心逻辑完全不变
     # 原参数：def __init__(self, channel):
     # 新参数：def __init__(self, in_channels, shortcut=False, g=1):  完美匹配你的yaml传参
     # ======================================
     def __init__(self, in_channels, shortcut=False, g=1):
-        super(IIA, self).__init__()
+        super().__init__()
         self.attention = AttentionWeight(in_channels)  # 把传参赋值给原模块，仅此一行改动
 
     def forward(self, x):
@@ -53,12 +52,11 @@ class IIA(nn.Module):
 
 
 class ChannelAttention(nn.Module):
-    """通道注意力模块
-    功能：通过聚合空间维度的信息（平均池化和最大池化），生成通道维度的注意力权重，增强重要通道特征
+    """通道注意力模块 功能：通过聚合空间维度的信息（平均池化和最大池化），生成通道维度的注意力权重，增强重要通道特征.
     """
 
     def __init__(self, inp, ratio=16):
-        super(ChannelAttention, self).__init__()
+        super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)  # 空间维度平均池化
         self.max_pool = nn.AdaptiveMaxPool2d(1)  # 空间维度最大池化
         # 压缩-激励结构：通过1x1卷积实现通道维度压缩和恢复
@@ -76,8 +74,8 @@ class ChannelAttention(nn.Module):
         return self.sigmoid(out)  # 输出通道权重
 
 
-device = torch.device('cuda:0')  # 定义计算设备为第一块GPU
-if __name__ == '__main__':
+device = torch.device("cuda:0")  # 定义计算设备为第一块GPU
+if __name__ == "__main__":
     # 模块测试：实例化IIA模块并验证输入输出尺寸
     net = IIA(512)  # 测试兼容传参
     net = net.cuda()
