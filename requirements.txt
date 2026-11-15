@@ -19,7 +19,7 @@ seaborn==0.13.2
 PyYAML==6.0.2
 
 # Ultralytics training, validation, inference and plotting
-torch==2.2.2
+torch==2.14.1
 torchvision==0.17.2
 ultralytics-thop==2.2.1
 tqdm==4.67.1
