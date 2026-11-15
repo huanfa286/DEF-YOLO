@@ -1,10 +1,10 @@
 path: E:/Dingzhenhao/python_workplace/UAV/UAV2_3
 train: train/images
 val: val/images
-test: test/images 
+test: test/images
 
 nc: 3
 names:
-  0: small-vehicle                 
-  1: large-vehicle                  
-  2: non-motor-vehicle                 
+  0: small-vehicle
+  1: large-vehicle
+  2: non-motor-vehicle
