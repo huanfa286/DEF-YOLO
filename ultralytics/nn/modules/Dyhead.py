@@ -1,7 +1,7 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from ultralytics import YOLO 
+from torch import nn
+
 
 class ScaleAwareAttention(nn.Module):
     def __init__(self, channels, scales=3):
@@ -12,16 +12,14 @@ class ScaleAwareAttention(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(channels * scales, channels // 16, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(channels // 16, channels * scales, kernel_size=1)
+            nn.Conv2d(channels // 16, channels * scales, kernel_size=1),
         )
 
     def forward(self, feats):
-        """
-        feats: list of feature maps [f1, f2, f3], each shape (B,C,H,W)
-        """
+        """Feats: list of feature maps [f1, f2, f3], each shape (B,C,H,W)."""
         B = feats[0].shape[0]
         # 沿通道拼接并池化
-        feat_cat = torch.cat([F.adaptive_avg_pool2d(f, (1,1)) for f in feats], dim=1)  # (B, 3C, 1, 1)
+        feat_cat = torch.cat([F.adaptive_avg_pool2d(f, (1, 1)) for f in feats], dim=1)  # (B, 3C, 1, 1)
         weights = self.fc(feat_cat)  # (B, 3*C, 1, 1)
         weights = weights.view(B, self.scales, -1, 1, 1)  # (B, S, C, 1, 1)
         weights = F.softmax(weights, dim=1)  # 归一化尺度权重
@@ -32,6 +30,7 @@ class ScaleAwareAttention(nn.Module):
             out.append(f * scale_weight.expand_as(f))
         return sum(out)
 
+
 class DyHeadBlock(nn.Module):
     def __init__(self, channels, groups=16):
         super().__init__()
@@ -41,13 +40,13 @@ class DyHeadBlock(nn.Module):
             nn.Conv2d(channels, channels // 16, kernel_size=1),
             nn.SiLU(),
             nn.Conv2d(channels // 16, channels, kernel_size=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
         self.spatial_attn = nn.Sequential(
             nn.Conv2d(channels, channels // 16, kernel_size=1),
             nn.SiLU(),
             nn.Conv2d(channels // 16, 1, kernel_size=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, inputs):
@@ -78,9 +77,7 @@ class DyHead_Detect_YOLO(nn.Module):
         self.predict = nn.ModuleList([nn.Conv2d(c, self.no * 8, 1) for c in ch])
 
     def forward(self, x):
-        """
-        x: 接收YOLO yaml传入的3个特征层的list [f1,f2,f3]，完美适配你的DyHead输入格式
-        输出：和原生YOLO Detect完全一致的检测结果，无缝兼容训练/推理
+        """x: 接收YOLO yaml传入的3个特征层的list [f1,f2,f3]，完美适配你的DyHead输入格式 输出：和原生YOLO Detect完全一致的检测结果，无缝兼容训练/推理.
         """
         out = []
         for i in range(3):
@@ -90,6 +87,6 @@ class DyHead_Detect_YOLO(nn.Module):
             pred = self.predict[i](feat)
             # 维度重塑，和原生Detect输出格式一致
             bs, _, ny, nx = pred.shape
-            pred = pred.view(bs, 8, self.no, ny, nx).permute(0,1,3,4,2).contiguous()
+            pred = pred.view(bs, 8, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
             out.append(pred)
-        return torch.cat([o.view(o.shape[0],-1,self.no) for o in out], 1)
+        return torch.cat([o.view(o.shape[0], -1, self.no) for o in out], 1)
