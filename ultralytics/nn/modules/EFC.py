@@ -1,6 +1,7 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
+
 
 # 纯原生PyTorch实现 EFC 特征融合核心模块，无任何MMCV依赖
 class EFC(nn.Module):
@@ -15,12 +16,10 @@ class EFC(nn.Module):
         self.eps = 1e-10
         self.gamma = nn.Parameter(torch.randn(c2, 1, 1))
         self.beta = nn.Parameter(torch.zeros(c2, 1, 1))
-        
+
         # 修复BUG：原循环定义会被覆盖，改为ModuleList存储4个分组卷积，逻辑生效
-        self.interact = nn.ModuleList([
-            nn.Conv2d(c2 // 4, c2 // 4, 1, 1) for _ in range(4)
-        ])
-        
+        self.interact = nn.ModuleList([nn.Conv2d(c2 // 4, c2 // 4, 1, 1) for _ in range(4)])
+
         self.gate_genator = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Conv2d(c2, c2, 1, 1),
@@ -33,7 +32,7 @@ class EFC(nn.Module):
         self.conv4_gobal = nn.Conv2d(c2, 1, kernel_size=1, stride=1)
 
     def forward(self, x):
-                # ======================================
+        # ======================================
         # ✅ 核心修复：兼容单输入/双输入，根治解包错误 (新增3行代码)
         # ======================================
         if isinstance(x, torch.Tensor):  # 判断是否是单张量输入(YOLO场景)
@@ -53,7 +52,7 @@ class EFC(nn.Module):
         X_ = X_4_sigmoid * X_GOBAL
         X_ = X_.chunk(4, dim=1)
         out = []
-        for group_id in range(0, 4):
+        for group_id in range(4):
             out_1 = self.interact[group_id](X_[group_id])
             N, C, H, W = out_1.size()
             x_1_map = out_1.reshape(N, 1, -1)
@@ -72,17 +71,17 @@ class EFC(nn.Module):
         std_1 = x_shape_1.std(dim=2, keepdim=True)
         x_guiyi = (x_add_1 - mean_1) / (std_1 + self.eps)
         x_guiyi_1 = x_guiyi.reshape(N, C, H, W)
-        x_gui = (x_guiyi_1 * self.gamma + self.beta)
+        x_gui = x_guiyi_1 * self.gamma + self.beta
         weight_x3 = self.Apt(X_GOBAL)
         reweights = self.sigmoid(weight_x3)  # 同步修正调用名
-        
+
         x_up_1 = reweights >= weight_1
         x_low_1 = reweights < weight_1
         x_up_2 = reweights >= weight_2
         x_low_2 = reweights < weight_2
         x_up = x_up_1 * X_GOBAL + x_up_2 * X_GOBAL
         x_low = x_low_1 * X_GOBAL + x_low_2 * X_GOBAL
-        
+
         x11_up_dwc = self.dwconv(x_low)
         x11_up_dwc = self.conv3(x11_up_dwc)
         x_so = self.gate_genator(x_low)
@@ -113,11 +112,11 @@ class Maxpoll(nn.Module):
 # EFC增强型FPN特征金字塔 - 纯原生PyTorch实现，无MMCV注册器
 class FPN(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(FPN, self).__init__()
+        super().__init__()
         self.P5_1 = nn.Conv2d(in_channels[3], out_channels, kernel_size=1, stride=1, padding=0)
-        self.P5_upsampled = nn.Upsample(scale_factor=2, mode='nearest')
+        self.P5_upsampled = nn.Upsample(scale_factor=2, mode="nearest")
         self.P5_2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.P4_upsampled = nn.Upsample(scale_factor=2, mode='nearest')
+        self.P4_upsampled = nn.Upsample(scale_factor=2, mode="nearest")
         self.efc1 = EFC(in_channels[2], out_channels)
         self.efc2 = EFC(in_channels[1], out_channels)
         self.efc3 = EFC(out_channels, out_channels)
@@ -129,7 +128,7 @@ class FPN(nn.Module):
 
     def forward(self, inputs):
         """Forward function."""
-        C2, C3, C4, C5 = inputs
+        _C2, C3, C4, C5 = inputs
         P5_x = self.P5_1(C5)
         P5_x = self.P5_2(P5_x)
         P5_upsampled_x = self.P5_upsampled(P5_x)
