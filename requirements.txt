@@ -1,0 +1,41 @@
+# AeroVision / Ultralytics UAV project
+#
+# Install from the project root with:
+#   python -m pip install -r requirements.txt
+#
+# Python recommendation: 3.10 or 3.11 on Windows.
+# PyTorch GPU wheels must match the NVIDIA driver/CUDA combination on the
+# target computer. If needed, install the matching PyTorch wheel first, then
+# run this file with --no-deps for torch/torchvision.
+
+# Core numerical and image-processing stack
+numpy==1.26.4
+opencv-python==4.10.0.84
+Pillow==11.1.0
+matplotlib==3.9.4
+scipy==1.13.1
+pandas==2.3.3
+seaborn==0.13.2
+PyYAML==6.0.2
+
+# Ultralytics training, validation, inference and plotting
+torch==2.2.2
+torchvision==0.17.2
+ultralytics-thop==2.2.1
+tqdm==4.67.1
+psutil==7.2.2
+py-cpuinfo==9.0.0
+requests==2.32.5
+
+# PyQt6 desktop detection frontend
+PyQt6==6.10.2
+
+# Pruning/evaluation and project-supported detection utilities
+torch-pruning==1.6.1
+pycocotools==2.0.11
+lap==0.5.12
+shapely==2.0.7
+
+# Install this checkout as the local ultralytics package.
+# This keeps the custom model definitions and loss functions in this project.
+-e .

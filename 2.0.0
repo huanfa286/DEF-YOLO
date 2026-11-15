@@ -1,0 +1,7 @@
+Collecting shapely
+  Downloading shapely-2.0.7-cp39-cp39-win_amd64.whl.metadata (7.1 kB)
+Requirement already satisfied: numpy<3,>=1.14 in e:\anaconda3\envs\yolov8\lib\site-packages (from shapely) (1.26.4)
+Downloading shapely-2.0.7-cp39-cp39-win_amd64.whl (1.4 MB)
+   ---------------------------------------- 1.4/1.4 MB 5.0 MB/s  0:00:00
+Installing collected packages: shapely
+Successfully installed shapely-2.0.7

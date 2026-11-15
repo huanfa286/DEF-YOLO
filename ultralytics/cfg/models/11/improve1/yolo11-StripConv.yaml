@@ -1,0 +1,381 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
+# Ultralytics YOLO11 object detection model with P3/8 - P5/32 outputs
+# Model docs: https://docs.ultralytics.com/models/yolo11
+# Task docs: https://docs.ultralytics.com/tasks/detect
+
+# Parameters     0.831      0.572
+#nc: 3 # number of classes
+#scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#  # [depth, width, max_channels]
+#  n: [0.50, 0.25, 1024] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#  s: [0.50, 0.50, 1024] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#  m: [0.50, 1.00, 512] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#  l: [1.00, 1.00, 512] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#  x: [1.00, 1.50, 512] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+## YOLO11n backbone
+#backbone:
+#  # [from, repeats, module, args]
+#  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+#  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+#  - [-1, 1, StripAttn, [32, 1, 19]]
+#  - [-1, 2, C3k2, [256, False, 0.25]]
+#  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+#  - [-1, 2, C3k2, [512, False, 0.25]]
+#  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+#  - [-1, 2, C3k2, [512, True]]
+#  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+#  - [-1, 2, C3k2, [1024, True]]
+#  - [-1, 1, SPPF, [1024, 5]] # 9
+#  - [-1, 2, C2PSA, [1024]] # 10
+#
+## YOLO11n head
+#head:
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 7], 1, Concat, [1]] # cat backbone P4
+#  - [-1, 2, C3k2, [512, False]] # 13                14
+#
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 5], 1, Concat, [1]] # cat backbone P3
+#  - [-1, 2, C3k2, [256, False]] # 16 (P3/8-small)  17
+#
+#  - [-1, 1, Conv, [256, 3, 2]]
+#  - [[-1, 14], 1, Concat, [1]] # cat head P4
+#  - [-1, 2, C3k2, [512, False]] # 19 (P4/16-medium) 20
+#
+#  - [-1, 1, Conv, [512, 3, 2]]
+#  - [[-1, 11], 1, Concat, [1]] # cat head P5
+#  - [-1, 2, C3k2, [1024, True]] # 22 (P5/32-large)  23
+#
+#  - [[17, 20, 23], 1, Detect, [nc]] # Detect(P3, P4, P5)
+
+
+# Parameters
+#nc: 3 # number of classes
+#scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#  # [depth, width, max_channels]
+#  n: [0.50, 0.25, 1024] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#  s: [0.50, 0.50, 1024] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#  m: [0.50, 1.00, 512] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#  l: [1.00, 1.00, 512] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#  x: [1.00, 1.50, 512] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+## YOLO11n backbone
+#backbone:
+#  # [from, repeats, module, args]
+#  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+#  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+#  - [-1, 2, C3k2, [256, False, 0.25]]
+#  - [-1, 1, StripAttn, [64, 1, 19]]
+#  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+#  - [-1, 2, C3k2, [512, False, 0.25]]
+#  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+#  - [-1, 2, C3k2, [512, True]]
+#  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+#  - [-1, 2, C3k2, [1024, True]]
+#  - [-1, 1, SPPF, [1024, 5]] # 9
+#  - [-1, 2, C2PSA, [1024]] # 10
+#
+## YOLO11n head
+#head:
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 7], 1, Concat, [1]] # cat backbone P4
+#  - [-1, 2, C3k2, [512, False]] # 13                14
+#
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 5], 1, Concat, [1]] # cat backbone P3
+#  - [-1, 2, C3k2, [256, False]] # 16 (P3/8-small)  17
+#
+#  - [-1, 1, Conv, [256, 3, 2]]
+#  - [[-1, 14], 1, Concat, [1]] # cat head P4
+#  - [-1, 2, C3k2, [512, False]] # 19 (P4/16-medium) 20
+#
+#  - [-1, 1, Conv, [512, 3, 2]]
+#  - [[-1, 11], 1, Concat, [1]] # cat head P5
+#  - [-1, 2, C3k2, [1024, True]] # 22 (P5/32-large)  23
+#
+#  - [[17, 20, 23], 1, Detect, [nc]] # Detect(P3, P4, P5)
+
+
+## Parameters
+#nc: 3 # number of classes
+#scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#  # [depth, width, max_channels]
+#  n: [0.50, 0.25, 1024] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#  s: [0.50, 0.50, 1024] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#  m: [0.50, 1.00, 512] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#  l: [1.00, 1.00, 512] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#  x: [1.00, 1.50, 512] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+## YOLO11n backbone
+#backbone:
+#  # [from, repeats, module, args]
+#  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+#  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+#  - [-1, 1, StripAttn, [32, 1, 19]]
+#  - [-1, 2, C3k2, [256, False, 0.25]]
+#  - [-1, 1, StripAttn, [64, 1, 19]]
+#  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8   5
+#  - [-1, 2, C3k2, [512, False, 0.25]]
+#  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+#  - [-1, 2, C3k2, [512, True]]
+#  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+#  - [-1, 2, C3k2, [1024, True]]
+#  - [-1, 1, SPPF, [1024, 5]] # 9
+#  - [-1, 2, C2PSA, [1024]] # 10   12
+#
+## YOLO11n head
+#head:
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 8], 1, Concat, [1]] # cat backbone P4
+#  - [-1, 2, C3k2, [512, False]] # 13                15
+#
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+#  - [[-1, 6], 1, Concat, [1]] # cat backbone P3
+#  - [-1, 2, C3k2, [256, False]] # 16 (P3/8-small)  18
+#
+#  - [-1, 1, Conv, [256, 3, 2]]
+#  - [[-1, 15], 1, Concat, [1]] # cat head P4
+#  - [-1, 2, C3k2, [512, False]] # 19 (P4/16-medium) 21
+#
+#  - [-1, 1, Conv, [512, 3, 2]]
+#  - [[-1, 12], 1, Concat, [1]] # cat head P5
+#  - [-1, 2, C3k2, [1024, True]] # 22 (P5/32-large)  24
+#
+#  - [[18, 21, 24], 1, Detect, [nc]] # Detect(P3, P4, P5)
+
+
+#nc: 3 # number of classes
+#scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#  # [depth, width, max_channels]
+#  n: [0.50, 0.25, 1024] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#  s: [0.50, 0.50, 1024] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#  m: [0.50, 1.00, 512] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#  l: [1.00, 1.00, 512] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#  x: [1.00, 1.50, 512] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+#backbone:
+#  # [from, repeats, module, args]          特征图尺寸 | 输出通道 | 说明
+#  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2    512×512    | 64       | stride=2下采样，尺寸1024/2=512
+#  - [-1, 1, Conv, [128, 3, 2]] #1-P2/4    256×256    | 128      | stride=2下采样，尺寸512/2=256
+#  - [-1, 2, C3k2, [256, False, 0.25]]    # 256×256    | 256      | 仅通道升维，尺寸不变
+#  - [-1, 1, Conv, [256, 3, 2]] #3-P3/8    128×128    | 256      | stride=2下采样，尺寸256/2=128 ✅核心P3层
+#  - [ -2, 1, Conv, [ 512, 3, 4 ] ]    # 4
+#
+#  - [-2, 2, C3k2, [512, False, 0.25]]     #128×128    | 512      | 仅通道升维，尺寸不变
+#  - [-1, 1, Conv, [512, 3, 2]] #5-P4/16    64×64     | 512      | stride=2下采样，尺寸128/2=64 ✅核心P4层
+#  - [-1, 2, C3k2, [512, True]]            # 64×64     | 512      | 仅通道不变，尺寸不变
+#  - [-1, 1, Conv, [1024, 3, 2]] #7-P5/32   32×32     | 1024     | stride=2下采样，尺寸64/2=32 ✅核心P5层
+#  - [-1, 2, C3k2, [1024, True]]            #32×32     | 1024     | 仅通道不变，尺寸不变
+#  - [-1, 1, SPPF, [1024, 5]] #9            32×32     | 1024     | 空间金字塔池化，尺寸不变
+#  - [-1, 2, C2PSA, [1024]] #10             32×32     | 1024     | 注意力增强，尺寸不变
+#
+#
+#head:
+#  # [from, repeats, module, args]          特征图尺寸 | 输出通道 | 说明 & 拼接匹配验证
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 64×64  | 1024    | 上采样×2，32×2=64 ✅
+#  - [[-1, 4], 1, Concat, [1]]
+#  - [[-1, 7], 1, Concat, [1]] # cat P4     64×64     | 1536    | 拼接：当前层64×64×1024 + backbone第6层64×64×512 → 通道叠加，尺寸不变 ✔️你原始索引正确
+#
+#  - [-1, 2, C3k2, [512, False]] #13        64×64     | 512     | 通道降维，尺寸不变 ✅核心P4中间层
+#
+#  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 128×128 | 512    | 上采样×2，64×2=128 ✅
+#  - [[-1, 5], 1, Concat, [1]] # cat P3     128×128   | 768     | 拼接：当前层128×128×512 + backbone第4层128×128×256 → 通道叠加，尺寸不变 ✔️你原始索引正确
+#  - [-1, 2, C3k2, [256, False]] #16        128×128   | 256     | 通道降维，尺寸不变 ✅核心P3输出层 (小目标检测)
+#
+#  - [-1, 1, Conv, [256, 3, 2]]             # 64×64     | 256     | stride=2下采样，128/2=64 ✅
+#  - [[-1, 15], 1, Concat, [1]] # cat P4    64×64     | 768     | 拼接：当前层64×64×256 + head第13层64×64×512 → 通道叠加，尺寸不变 ✔️你原始索引正确
+#  - [-1, 2, C3k2, [512, False]] #19        64×64     | 512     | 通道降维，尺寸不变 ✅核心P4输出层 (中目标检测)
+#
+#  - [-1, 1, Conv, [512, 3, 2]]             # 32×32     | 512     | stride=2下采样，64/2=32 ✅
+#  - [[-1, 11], 1, Concat, [1]] # cat P5    32×32     | 1536    | 拼接：当前层32×32×512 + backbone第10层32×32×1024 → 通道叠加，尺寸不变 ✔️你原始索引正确
+#  - [-1, 2, C3k2, [1024, True]] #22        32×32     | 1024    | 通道升维，尺寸不变 ✅核心P5输出层 (大目标检测)
+#
+#  - [[18, 21, 24], 1, Detect, [nc]]        # 多尺度融合 | 80+4*10 | Detect层融合3个尺寸特征图：128×128(P3)+64×64(P4)+32×32(P5) ✔️你原始索引绝对正确
+
+#==============================================YOLOv11-FPN====================================
+#  nc: 3 # number of classes
+#  scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#    # [depth, width, max_channels]
+#    n: [ 0.50, 0.25, 1024 ] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#    s: [ 0.50, 0.50, 1024 ] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#    m: [ 0.50, 1.00, 512 ] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#    l: [ 1.00, 1.00, 512 ] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#    x: [ 1.00, 1.50, 512 ] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+#  # YOLO11n backbone
+#  backbone:
+#    # [from, repeats, module, args]
+#    - [ -1, 1, Conv, [ 64, 3, 2 ] ] # 0-P1/2
+#    - [ -1, 1, Conv, [ 128, 3, 2 ] ] # 1-P2/4
+#    - [ -1, 2, C3k2, [ 256, False, 0.25 ] ]
+#    - [ -1, 1, Conv, [ 256, 3, 2 ] ] # 3-P3/8
+#    - [ -1, 2, C3k2, [ 512, False, 0.25 ] ]
+#    - [ -1, 1, Conv, [ 512, 3, 2 ] ] # 5-P4/16
+#    - [ -1, 2, C3k2, [ 512, True ] ]
+#    - [ -1, 1, Conv, [ 1024, 3, 2 ] ] # 7-P5/32
+#    - [ -1, 2, C3k2, [ 1024, True ] ]
+#    - [ -1, 1, SPPF, [ 1024, 5 ] ] # 9
+#    - [ -1, 2, C2PSA, [ 1024 ] ] # 10
+#
+#
+#    - [ 0, 1, Conv, [ 128, 3, 2 ] ] # 11
+#    - [ 1, 1, Conv, [ 256, 3, 2 ] ] # 12
+#    - [ 4, 1, Conv, [ 512, 3, 2 ] ] # 13
+#
+#  # YOLO11n head
+#  head:
+#    - [ -4, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 14
+#    - [ [ -1, 6 ], 1, Concat, [ 1 ] ] # cat backbone P4   # 15
+#    - [ [ -1, 13 ], 1, Concat, [ 1 ] ]                   # 16
+#    - [ -1, 2, C3k2, [ 512, False ] ] # 13               # 17
+#
+#    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      #18
+#    - [ [ -1, 4 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 19
+#    - [ [ -1, 12 ], 1, Concat, [ 1 ] ]                    # 20
+#    - [ -1, 2, C3k2, [ 256, False ] ] # 16 (P3/8-small)   # 21
+#
+#    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 22
+#    - [ [ -1, 1 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 23
+#    - [ [ -1, 11 ], 1, Concat, [ 1 ] ]                    # 24
+#
+#    - [ -1, 2, C3k2, [ 256, False ] ]                     # 25
+#
+#    - [ -1, 1, Conv, [ 256, 3, 2 ] ]                      # 26
+#    - [ [ -1, 21 ], 1, Concat, [ 1 ] ] # cat head P4       # 27
+#    - [ -1, 2, C3k2, [ 512, False ] ] # 19 (P4/16-medium) #28
+#
+#    - [ -1, 1, Conv, [ 512, 3, 2 ] ]                      # 29
+#    - [ [ -1, 17 ], 1, Concat, [ 1 ] ] # cat head P5       # 30
+#    - [ -1, 2, C3k2, [ 1024, True ] ] # 22 (P5/32-large)   # 31
+#
+#    - [ [ 25, 28, 31], 1, Detect, [ nc ] ] # Detect(P3, P4, P5)
+
+
+
+#==============================================YOLOv11-FPN  +DEConv====================================
+
+#  nc: 3 # number of classes
+#  scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+#    # [depth, width, max_channels]
+#    n: [ 0.50, 0.25, 1024 ] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+#    s: [ 0.50, 0.50, 1024 ] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+#    m: [ 0.50, 1.00, 512 ] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+#    l: [ 1.00, 1.00, 512 ] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+#    x: [ 1.00, 1.50, 512 ] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+#
+#  # YOLO11n backbone
+#  backbone:
+#    # [from, repeats, module, args]
+#    - [ -1, 1, Conv, [ 64, 3, 2 ] ] # 0-P1/2
+#    - [ -1, 1, Conv, [ 128, 3, 2 ] ] # 1-P2/4
+#    - [ -1, 2, C3k2, [ 256, False, 0.25 ] ]
+#    - [ -1, 1, Conv, [ 256, 3, 2 ] ] # 3-P3/8
+#    - [ -1, 2, C3k2, [ 512, False, 0.25 ] ]
+#    - [ -1, 1, Conv, [ 512, 3, 2 ] ] # 5-P4/16
+#    - [ -1, 2, C3k2, [ 512, True ] ]
+#    - [ -1, 1, Conv, [ 1024, 3, 2 ] ] # 7-P5/32
+#    - [ -1, 2, C3k2, [ 1024, True ] ]
+#    - [ -1, 1, SPPF, [ 1024, 5 ] ] # 9
+#    - [ -1, 2, C2PSA, [ 1024 ] ] # 10
+#
+#
+#    - [ 0, 1, Conv, [ 128, 3, 2 ] ] # 11
+#    - [ 1, 1, Conv, [ 256, 3, 2 ] ] # 12
+#    - [ 4, 1, Conv, [ 512, 3, 2 ] ] # 13
+#
+#  # YOLO11n head
+#  head:
+#    - [ -4, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 14
+#    - [ [ -1, 6 ], 1, Concat, [ 1 ] ] # cat backbone P4   # 15
+#    - [ [ -1, 13 ], 1, Concat, [ 1 ] ]                   # 16
+#    - [ -1, 1, DEConv, [ 512 ] ]                                 #17
+#    - [ -1, 2, C3k2, [ 512, False ] ] # 13               # 17     18
+#
+#    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      #18
+#    - [ [ -1, 4 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 19
+#    - [ [ -1, 12 ], 1, Concat, [ 1 ] ]                    # 20
+#    - [ -1, 1, DEConv, [ 320 ] ]                                   # 22
+#    - [ -1, 2, C3k2, [ 256, False ] ] # 16 (P3/8-small)   # 21       23
+#
+#    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 22
+#    - [ [ -1, 1 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 23
+#    - [ [ -1, 11 ], 1, Concat, [ 1 ] ]                    # 24
+#    - [ -1, 1, DEConv, [ 128 ] ]                                   #27
+#    - [ -1, 2, C3k2, [ 256, False ] ]                     # 25      28
+#
+#    - [ -1, 1, Conv, [ 256, 3, 2 ] ]                      # 26
+#    - [ [ -1, 23 ], 1, Concat, [ 1 ] ] # cat head P4       # 27
+#    - [ -1, 1, DEConv, [ 128 ] ]                                   #31
+#    - [ -1, 2, C3k2, [ 512, False ] ] # 19 (P4/16-medium) #28        32
+#
+#    - [ -1, 1, Conv, [ 512, 3, 2 ] ]                      # 29
+#    - [ [ -1, 18 ], 1, Concat, [ 1 ] ] # cat head P5       # 30
+#    - [ -1, 1, DEConv, [ 256 ] ]                                 #35
+#    - [ -1, 2, C3k2, [ 1024, True ] ] # 22 (P5/32-large)   # 31   36
+#
+#    - [ [ 28, 32, 36], 1, Detect, [ nc ] ] # Detect(P3, P4, P5)
+
+
+#==============================================YOLOv11-FPN  +DEConv   C3k2换StripConv====================================
+  nc: 3 # number of classes
+  scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
+    # [depth, width, max_channels]
+    n: [ 0.50, 0.25, 1024 ] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
+    s: [ 0.50, 0.50, 1024 ] # summary: 181 layers, 9458752 parameters, 9458736 gradients, 21.7 GFLOPs
+    m: [ 0.50, 1.00, 512 ] # summary: 231 layers, 20114688 parameters, 20114672 gradients, 68.5 GFLOPs
+    l: [ 1.00, 1.00, 512 ] # summary: 357 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
+    x: [ 1.00, 1.50, 512 ] # summary: 357 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
+
+  # YOLO11n backbone
+  backbone:
+    # [from, repeats, module, args]
+    - [ -1, 1, Conv, [ 64, 3, 2 ] ] # 0-P1/2
+    - [ -1, 1, Conv, [ 128, 3, 2 ] ] # 1-P2/4
+    - [ -1, 2, C3k2, [ 256, False, 0.25 ] ]
+    - [ -1, 1, Conv, [ 256, 3, 2 ] ] # 3-P3/8
+    - [ -1, 2, C3k2, [ 512, False, 0.25 ] ]
+    - [ -1, 1, Conv, [ 512, 3, 2 ] ] # 5-P4/16
+    - [ -1, 2, C3k2, [ 512, True ] ]
+    - [ -1, 1, Conv, [ 1024, 3, 2 ] ] # 7-P5/32
+    - [ -1, 2, C3k2, [ 1024, True ] ]
+    - [ -1, 1, SPPF, [ 1024, 5 ] ] # 9
+    - [ -1, 2, C2PSA, [ 1024 ] ] # 10
+
+
+    - [ 0, 1, Conv, [ 128, 3, 2 ] ] # 11
+    - [ 1, 1, Conv, [ 256, 3, 2 ] ] # 12
+    - [ 4, 1, Conv, [ 512, 3, 2 ] ] # 13
+
+  # YOLO11n head
+  head:
+    - [ -4, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 14
+    - [ [ -1, 6 ], 1, Concat, [ 1 ] ] # cat backbone P4   # 15
+    - [ [ -1, 13 ], 1, Concat, [ 1 ] ]                   # 16
+    - [ -1, 1, DEConv, [ 512 ] ]                                 #17
+    - [ -1, 2, C3k2, [ 512, False ] ] # 13               # 17     18
+
+    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      #18
+    - [ [ -1, 4 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 19
+    - [ [ -1, 12 ], 1, Concat, [ 1 ] ]                    # 20
+    - [ -1, 1, DEConv, [ 320 ] ]                                   # 22
+    - [ -1, 2, C3k2, [ 256, False ] ] # 16 (P3/8-small)   # 21       23
+
+    - [ -1, 1, nn.Upsample, [ None, 2, "nearest" ] ]      # 22
+    - [ [ -1, 1 ], 1, Concat, [ 1 ] ] # cat backbone P3   # 23
+    - [ [ -1, 11 ], 1, Concat, [ 1 ] ]                    # 24
+    - [ -1, 1, DEConv, [ 128 ] ]                                   #27
+    - [ -1, 2, C3k2, [ 256, False ] ]                     # 25      28
+
+    - [ -1, 1, Conv, [ 256, 3, 2 ] ]                      # 26
+    - [ [ -1, 23 ], 1, Concat, [ 1 ] ] # cat head P4       # 27
+    - [ -1, 1, DEConv, [ 128 ] ]                                   #31
+    - [ -1, 2, C3k2, [ 512, False ] ] # 19 (P4/16-medium) #28        32
+
+    - [ -1, 1, Conv, [ 512, 3, 2 ] ]                      # 29
+    - [ [ -1, 18 ], 1, Concat, [ 1 ] ] # cat head P5       # 30
+    - [ -1, 1, DEConv, [ 256 ] ]                                 #35
+    - [ -1, 2, C3k2, [ 1024, True ] ] # 22 (P5/32-large)   # 31   36
+
+    - [ [ 28, 32, 36], 1, Detect, [ nc ] ] # Detect(P3, P4, P5)
