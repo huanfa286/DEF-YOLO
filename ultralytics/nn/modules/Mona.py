@@ -50,7 +50,7 @@
 #         # 特征投影降维
 #         project1 = self.project1(x)
 #         b, n, c = project1.shape
-        
+
 #         # 序列特征 → 特征图 [b,n,c] → [b,c,h,w]，适配卷积运算
 #         h, w = hw_shape
 #         project1 = project1.reshape(b, h, w, c).permute(0, 3, 1, 2)
@@ -64,14 +64,15 @@
 #         project2 = self.project2(nonlinear)
 
 #         return identity + project2 # 最终残差，特征增强无副作用
-    
+
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
 
 # ------------------------------ 纯卷积版 Mona 模块 (唯一适配替换SPPF) ------------------------------
 # 输入: [B, C, H, W] 特征图 | 输出: [B, C, H, W] 特征图 | 尺寸不变、通道不变 | 无维度转换 | 无额外参数
 INNER_DIM = 64
+
+
 class MonaOp(nn.Module):
     def __init__(self, in_features):
         super().__init__()
@@ -86,6 +87,7 @@ class MonaOp(nn.Module):
         x = (self.conv1(x) + self.conv2(x) + self.conv3(x)) / 3.0 + identity
         return identity + self.projector(x)
 
+
 class Mona(nn.Module):
     def __init__(self, in_dim, factor=4):
         super().__init__()
@@ -96,8 +98,8 @@ class Mona(nn.Module):
         self.adapter_conv = MonaOp(INNER_DIM)
         self.norm = nn.GroupNorm(1, in_dim)  # 适配卷积特征图的归一化，梯度稳
         # 可学习权重，初始化极小值，不破坏原始特征，训练自适应增强
-        self.gamma = nn.Parameter(torch.ones(in_dim,1,1)*1e-6)
-        self.gammax = nn.Parameter(torch.ones(in_dim,1,1))
+        self.gamma = nn.Parameter(torch.ones(in_dim, 1, 1) * 1e-6)
+        self.gammax = nn.Parameter(torch.ones(in_dim, 1, 1))
 
     def forward(self, x):
         identity = x
