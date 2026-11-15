@@ -22,8 +22,7 @@ def find_latest_best_map50() -> Path:
     candidates = list(run_root.glob("train*/weights/best_mAP50.pt"))
     if not candidates:
         raise FileNotFoundError(
-            f"No best_mAP50.pt was found under {run_root}. "
-            "Pass a trained checkpoint path explicitly."
+            f"No best_mAP50.pt was found under {run_root}. Pass a trained checkpoint path explicitly."
         )
     return max(candidates, key=lambda path: path.stat().st_mtime)
 

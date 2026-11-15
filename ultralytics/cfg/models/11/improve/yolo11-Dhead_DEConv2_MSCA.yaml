@@ -60,8 +60,7 @@ head:
   - [27, 1, MSCAAttention, []] # 33
   - [30, 1, MSCAAttention, []] # 34
 
-
-  - [[31, 32, 33, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5) 
+  - [[31, 32, 33, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
 ##################    backbone中的C3K2后添加MSCAAttention   ###########################################
 # nc: 3 # number of classes
@@ -120,11 +119,9 @@ head:
 #   - [[-1, 14], 1, Concat, [1]] # cat head P5 # 29
 #   - [-1, 2, C3k2, [1024, True]] # 30 (P5/32-large) 输出层4 ✔️
 
-#   - [[24, 28, 31, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5) 
-
+#   - [[24, 28, 31, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
 # ##################    Detect前和DEConv后添加MSCAAttention   ###########################################
-
 
 # # Ultralytics 🚀 AGPL-3.0 License
 # # Ultralytics YOLO11 object detection model with P3/8 - P5/32 outputs
@@ -187,9 +184,7 @@ head:
 #   - [32, 1, MSCAAttention, []] # 36 P5特征最终聚焦
 
 #   # ✅ 最终Detect调用：注意力增强后的特征层
-#   - [[33, 34, 35, 36], 1, Detect, [nc]] # Detect(P2, P3, P4, P5) 
-
-
+#   - [[33, 34, 35, 36], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
 # ##################    删去DEConv后 仅主干 C3k2 后插入 MSCAAttention 优化  ###########################################
 
@@ -251,7 +246,6 @@ head:
 #   - [-1, 2, C3k2, [1024, True]] # 32 (P5/32-large) 输出层4 ✔️
 
 #   - [[23, 26, 29, 32], 1, Detect, [nc]] # Detect(P2, P3, P4, P5) ✔️ 精准调用4个输出层
-
 
 ##################    删去DEConv后 detect前插入 MSCAAttention 优化  ###########################################
 
@@ -373,7 +367,6 @@ head:
 #   - [27, 1, MSCAAttention, []] # 30
 #   # - [30, 1, MSCAAttention, []] # 34
 
-
 #   - [[28, 29, 30], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
 # nc: 3 # number of classes
@@ -433,11 +426,9 @@ head:
 #   - [26, 1, MSCAAttention, []] # 30
 #   # - [30, 1, MSCAAttention, []] # 34
 
-
 #   - [[27, 28, 29], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
-
-nc: 3  # number of classes 你的类别数，无需修改
+nc: 3 # number of classes 你的类别数，无需修改
 scales: # model compound scaling constants
   # [depth, width, max_channels]
   n: [0.50, 0.25, 1024] # summary: 181 layers, 2624080 parameters, 2624064 gradients, 6.6 GFLOPs
