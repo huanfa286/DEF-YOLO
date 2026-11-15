@@ -59,8 +59,6 @@
 
 #   - [[20, 23, 26, 29], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
-
-
 # nc: 3 # number of classes
 # scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
 #   # [depth, width, max_channels]
@@ -76,7 +74,7 @@
 #   - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
 #   - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
 #   - [-1, 2, C3k2, [256, False, 0.25]]
-  
+
 #   - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
 #   - [-1, 1, DEConv, [64]]
 #   - [-1, 2, C3k2, [512, False, 0.25]]
@@ -116,8 +114,6 @@
 
 #   - [[20, 23, 26, 29], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
 
-
-
 # nc: 3 # number of classes
 # scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call yolo11.yaml with scale 'n'
 #   # [depth, width, max_channels]
@@ -133,7 +129,7 @@
 #   - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
 #   - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
 #   - [-1, 2, C3k2, [256, False, 0.25]]
-  
+
 #   - [-1, 1, DEConv, [64]]
 #   - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
 #   - [-1, 2, C3k2, [512, False, 0.25]]
@@ -239,5 +235,4 @@
 #   - [27, 1, MSCAAttention, []] # 33
 #   - [30, 1, MSCAAttention, []] # 34
 
-
-#   - [[31, 32, 33, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5) 
+#   - [[31, 32, 33, 34], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)

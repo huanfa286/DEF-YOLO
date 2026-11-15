@@ -104,11 +104,11 @@ dataset/
 
 自建 UAV 数据集配置文件 `UAV/UAV2_3.yaml` 定义三类目标：
 
-| ID | 类别 |
-|---:|---|
-| 0 | small-vehicle（小型车辆） |
-| 1 | large-vehicle（大型车辆） |
-| 2 | non-motor-vehicle（非机动车） |
+|  ID | 类别                          |
+| --: | ----------------------------- |
+|   0 | small-vehicle（小型车辆）     |
+|   1 | large-vehicle（大型车辆）     |
+|   2 | non-motor-vehicle（非机动车） |
 
 VisDrone 配置定义十类目标，类别列表见 `VisDrone2019/visdrone2019.yaml`。两个数据集的类别 ID 和语义不同，训练、验证时必须使用与标签相匹配的数据 YAML。
 
@@ -135,6 +135,7 @@ names:
 
 ```python
 from pathlib import Path
+
 from ultralytics import YOLO
 
 model_yaml = Path("ultralytics/cfg/models/11/improve1/FPN-DEConv/yolov11-FPN-DEConv.yaml")
@@ -146,8 +147,8 @@ model.train(
     epochs=200,
     batch=4,
     imgsz=1024,
-    device=0,                 # 无可用 CUDA GPU 时可设为 "cpu"
-    workers=0,                # Windows 环境可设为 0
+    device=0,  # 无可用 CUDA GPU 时可设为 "cpu"
+    workers=0,  # Windows 环境可设为 0
     optimizer="AdamW",
     lr0=0.001,
     cos_lr=True,
@@ -171,7 +172,7 @@ from ultralytics import YOLO
 model = YOLO("runs/DEF-YOLO/UAV/train/weights/best.pt")
 metrics = model.val(
     data="UAV/UAV2_3.yaml",
-    split="test",             # 可改成 "val"
+    split="test",  # 可改成 "val"
     imgsz=1024,
     batch=4,
     device=0,
