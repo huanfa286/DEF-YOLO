@@ -7,8 +7,9 @@ from torch import nn
 class Conv2d_cd(nn.Module):
     """Central-difference convolution represented by an equivalent 3x3 kernel."""
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=1, dilation=1, groups=1, bias=False, theta=1.0):
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False, theta=1.0
+    ):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -33,8 +34,9 @@ class Conv2d_cd(nn.Module):
 class Conv2d_ad(nn.Module):
     """Angular-difference convolution represented by an equivalent 3x3 kernel."""
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=1, dilation=1, groups=1, bias=False, theta=1.0):
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False, theta=1.0
+    ):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -59,8 +61,9 @@ class Conv2d_ad(nn.Module):
 class Conv2d_rd(nn.Module):
     """Radial-difference convolution retained for compatibility with older imports."""
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=2, dilation=1, groups=1, bias=False, theta=1.0):
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, stride=1, padding=2, dilation=1, groups=1, bias=False, theta=1.0
+    ):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -80,9 +83,7 @@ class Conv2d_rd(nn.Module):
 
         weight = self.conv.weight
         flat_weight = weight.reshape(weight.shape[0], weight.shape[1], -1)
-        diff_weight = torch.zeros(
-            weight.shape[0], weight.shape[1], 25, device=weight.device, dtype=weight.dtype
-        )
+        diff_weight = torch.zeros(weight.shape[0], weight.shape[1], 25, device=weight.device, dtype=weight.dtype)
         diff_weight[:, :, [0, 2, 4, 10, 14, 20, 22, 24]] = flat_weight[:, :, 1:]
         diff_weight[:, :, [6, 7, 8, 11, 13, 16, 17, 18]] = -flat_weight[:, :, 1:] * self.theta
         diff_weight[:, :, 12] = flat_weight[:, :, 0] * (1 - self.theta)
@@ -99,8 +100,9 @@ class Conv2d_rd(nn.Module):
 class Conv2d_hd(nn.Module):
     """Horizontal-difference convolution represented by an equivalent 3x3 kernel."""
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=1, dilation=1, groups=1, bias=False, theta=1.0):
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False, theta=1.0
+    ):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -125,8 +127,7 @@ class Conv2d_hd(nn.Module):
 class Conv2d_vd(nn.Module):
     """Vertical-difference convolution represented by an equivalent 3x3 kernel."""
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=1, dilation=1, groups=1, bias=False):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -226,9 +227,8 @@ class DEConv(nn.Module):
 class LiteDEConv(nn.Module):
     """Lightweight detail-enhanced convolution for resource-constrained training.
 
-    The full DEConv uses five dense 3x3 branches. This variant keeps one dense
-    3x3 branch and adds a depthwise-separable detail branch, reducing parameters
-    while preserving a learnable local-detail path.
+    The full DEConv uses five dense 3x3 branches. This variant keeps one dense 3x3 branch and adds a depthwise-separable
+    detail branch, reducing parameters while preserving a learnable local-detail path.
     """
 
     def __init__(self, in_channels, out_channels=None, bias=True, detail_init=0.1):
