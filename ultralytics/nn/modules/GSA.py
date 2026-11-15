@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from typing import Tuple
+from torch import nn
 
 
 class DWConv2d(nn.Module):
-    """深度可分离卷积-局部位置增强LEPE，保留原逻辑不变"""
+    """深度可分离卷积-局部位置增强LEPE，保留原逻辑不变."""
 
     def __init__(self, dim, kernel_size, stride, padding):
         super().__init__()
@@ -19,14 +20,14 @@ class DWConv2d(nn.Module):
 
 
 def angle_transform(x, sin, cos):
-    """角度变换函数，保留原逻辑不变，核心几何增强"""
+    """角度变换函数，保留原逻辑不变，核心几何增强."""
     x1 = x[:, :, :, :, ::2]
     x2 = x[:, :, :, :, 1::2]
     return (x * cos) + (torch.stack([-x2, x1], dim=-1).flatten(-2) * sin)
 
 
 class GeoPriorGen(nn.Module):
-    """几何先验生成模块，保留核心+修复掩码维度，适配分块模式"""
+    """几何先验生成模块，保留核心+修复掩码维度，适配分块模式."""
 
     def __init__(self, embed_dim, num_heads, initial_value=2, heads_range=4):
         super().__init__()
@@ -34,18 +35,19 @@ class GeoPriorGen(nn.Module):
         angle = angle.unsqueeze(-1).repeat(1, 2).flatten()
         self.weight = nn.Parameter(torch.ones(2, 1, 1, 1), requires_grad=True)
         decay = torch.log(
-            1 - 2 ** (-initial_value - heads_range * torch.arange(num_heads, dtype=torch.float) / num_heads))
+            1 - 2 ** (-initial_value - heads_range * torch.arange(num_heads, dtype=torch.float) / num_heads)
+        )
         self.register_buffer("angle", angle)
         self.register_buffer("decay", decay)
 
     def generate_1d_decay(self, l: int):
-        """生成1D位置衰减掩码，精简计算，维度适配"""
+        """生成1D位置衰减掩码，精简计算，维度适配."""
         index = torch.arange(l).to(self.decay)
         mask = index[:, None] - index[None, :]
         mask = mask.abs() * self.decay[:, None, None]
         return mask
 
-    def forward(self, HW_tuple: Tuple[int], depth_map, split_or_not=False):
+    def forward(self, HW_tuple: tuple[int], depth_map, split_or_not=False):
         H, W = HW_tuple
         # 虚拟深度图插值，无实际作用但保留源码逻辑
         depth_map = F.interpolate(depth_map, size=HW_tuple, mode="bilinear", align_corners=False)
@@ -68,7 +70,7 @@ class GeoPriorGen(nn.Module):
 
 
 class Full_GSA(nn.Module):
-    """GSA核心模块 - ✅ 彻底修复分块模式维度不匹配BUG + 显存优化，核心逻辑完整保留"""
+    """GSA核心模块 - ✅ 彻底修复分块模式维度不匹配BUG + 显存优化，核心逻辑完整保留."""
 
     def __init__(self, embed_dim, num_heads, value_factor=1):
         super().__init__()
@@ -77,7 +79,7 @@ class Full_GSA(nn.Module):
         self.value_factor = value_factor
         self.head_dim = embed_dim * value_factor // num_heads
         self.key_dim = embed_dim // num_heads
-        self.scaling = self.key_dim ** -0.5
+        self.scaling = self.key_dim**-0.5
 
         # QKV投影+输出投影，保留原初始化方式，保证精度
         self.q_proj = nn.Linear(embed_dim, embed_dim)
@@ -89,11 +91,11 @@ class Full_GSA(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        nn.init.xavier_normal_(self.q_proj.weight, gain=2 ** -2.5)
-        nn.init.xavier_normal_(self.k_proj.weight, gain=2 ** -2.5)
-        nn.init.xavier_normal_(self.v_proj.weight, gain=2 ** -2.5)
+        nn.init.xavier_normal_(self.q_proj.weight, gain=2**-2.5)
+        nn.init.xavier_normal_(self.k_proj.weight, gain=2**-2.5)
+        nn.init.xavier_normal_(self.v_proj.weight, gain=2**-2.5)
         nn.init.xavier_normal_(self.out_proj.weight)
-        nn.init.constant_(self.out_proj.bias, 0.)
+        nn.init.constant_(self.out_proj.bias, 0.0)
 
     def forward(self, x: torch.Tensor, rel_pos, split_or_not=True):
         bsz, H, W, _ = x.shape
@@ -160,7 +162,7 @@ class GSA(nn.Module):
         self.gsa = Full_GSA(embed_dim=c1, num_heads=num_heads, value_factor=factor)
 
     def forward(self, x):
-        b, c, h, w = x.shape
+        b, _c, h, w = x.shape
         # CHW → HWC 格式转换，适配GSA输入
         x_in = x.permute(0, 2, 3, 1)
         # 生成虚拟深度图，纯RGB输入适配，无深度图也能运行
